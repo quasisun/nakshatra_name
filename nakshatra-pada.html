@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Накшатра — Пада — Слог</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+
+  :root {
+    --terracotta:   #C1440E;
+    --terracotta-d: #8B2E08;
+    --terracotta-l: #D4622A;
+    --beige:        #F5ECD7;
+    --beige-d:      #E8D5B0;
+    --beige-dd:     #D4B896;
+    --gold:         #B8860B;
+    --gold-l:       #D4A017;
+    --brown:        #5C3317;
+    --text:         #3A1F0A;
+    --shadow: rgba(90,40,10,0.18);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'EB Garamond', Georgia, serif;
+    background: var(--beige);
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(193,68,14,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, rgba(184,134,11,0.07) 0%, transparent 60%);
+  }
+
+  /* ── Decorative border ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 12px;
+    border: 2px solid var(--gold);
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.45;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 16px;
+    border: 1px solid var(--terracotta);
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.25;
+  }
+
+  .page-wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 60px;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  .om {
+    font-size: 2.6rem;
+    color: var(--terracotta);
+    display: block;
+    margin-bottom: 4px;
+    filter: drop-shadow(0 1px 2px var(--shadow));
+  }
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-weight: 700;
+    color: var(--terracotta-d);
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+  }
+  header h1 span {
+    display: block;
+    font-size: 0.72em;
+    font-weight: 400;
+    color: var(--gold);
+    letter-spacing: 0.18em;
+    margin-top: 6px;
+  }
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px auto 0;
+    max-width: 420px;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .divider-gem {
+    width: 8px; height: 8px;
+    background: var(--terracotta);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  /* ── Form card ── */
+  .card {
+    background: linear-gradient(160deg, #fdf7ec 0%, var(--beige) 100%);
+    border: 1px solid var(--beige-dd);
+    border-radius: 4px;
+    padding: 36px 40px 32px;
+    box-shadow: 0 4px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.7);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--terracotta-d), var(--terracotta-l), var(--gold-l), var(--terracotta-l), var(--terracotta-d));
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 28px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    color: var(--terracotta-d);
+    text-transform: uppercase;
+  }
+  input, select {
+    font-family: 'EB Garamond', serif;
+    font-size: 1.05rem;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--beige-dd);
+    border-bottom-color: var(--gold);
+    border-radius: 2px;
+    padding: 9px 13px;
+    color: var(--text);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    outline: none;
+  }
+  input:focus, select:focus {
+    border-color: var(--terracotta);
+    box-shadow: 0 0 0 2px rgba(193,68,14,0.12);
+    background: #fff;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: sepia(1) saturate(3) hue-rotate(330deg);
+    opacity: 0.6;
+    cursor: pointer;
+  }
+
+  .hint {
+    font-size: 0.78rem;
+    color: var(--gold);
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  .btn-row { margin-top: 28px; display: flex; justify-content: center; }
+  button[type="submit"] {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--terracotta-d) 0%, var(--terracotta) 50%, var(--terracotta-l) 100%);
+    color: var(--beige);
+    border: none;
+    border-radius: 2px;
+    padding: 13px 42px;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(193,68,14,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  button[type="submit"]::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 1px;
+    pointer-events: none;
+  }
+  button[type="submit"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(193,68,14,0.4);
+  }
+  button[type="submit"]:active { transform: translateY(0); }
+
+  /* ── Result ── */
+  #result {
+    margin-top: 32px;
+    display: none;
+  }
+  .result-card {
+    background: linear-gradient(160deg, #fff9f0 0%, #fdf3e3 100%);
+    border: 1px solid var(--beige-dd);
+    border-radius: 4px;
+    padding: 0;
+    box-shadow: 0 4px 24px var(--shadow);
+    overflow: hidden;
+    position: relative;
+  }
+  .result-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--terracotta-l), var(--gold));
+  }
+  .result-header {
+    background: linear-gradient(135deg, var(--terracotta-d), #6B1E05);
+    color: var(--beige);
+    padding: 28px 36px 22px;
+    text-align: center;
+    position: relative;
+  }
+  .result-header::after {
+    content: '✦';
+    position: absolute;
+    bottom: -11px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--terracotta-d);
+    color: var(--gold-l);
+    font-size: 0.8rem;
+    width: 22px; height: 22px;
+    line-height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--beige-d);
+    z-index: 1;
+  }
+  .syllable-main {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2.8rem, 8vw, 4.5rem);
+    font-weight: 700;
+    color: var(--gold-l);
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    display: block;
+  }
+  .syllable-devanagari {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    color: rgba(245,236,215,0.75);
+    margin-top: 6px;
+    display: block;
+  }
+  .result-body {
+    padding: 36px 36px 28px;
+  }
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 32px;
+  }
+  .result-item { border-bottom: 1px solid var(--beige-dd); padding-bottom: 12px; }
+  .result-item:last-child, .result-item:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+  .result-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.16em;
+    color: var(--terracotta);
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .result-value {
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .result-value.large {
+    font-size: 1.35rem;
+    color: var(--terracotta-d);
+    font-style: italic;
+  }
+  .nakshatra-deity {
+    font-size: 0.88rem;
+    color: var(--gold);
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  .all-padas {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--beige-dd);
+  }
+  .all-padas-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    color: var(--terracotta);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .padas-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .pada-chip {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border: 1.5px solid var(--beige-dd);
+    background: var(--beige);
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    color: var(--brown);
+    cursor: default;
+    gap: 1px;
+    transition: all 0.2s;
+  }
+  .pada-chip .chip-num { font-size: 0.55rem; color: var(--gold); letter-spacing: 0.1em; }
+  .pada-chip.active {
+    background: linear-gradient(135deg, var(--terracotta-d), var(--terracotta));
+    border-color: var(--terracotta-d);
+    color: var(--beige);
+    box-shadow: 0 3px 12px rgba(193,68,14,0.35);
+    font-size: 0.9rem;
+  }
+  .pada-chip.active .chip-num { color: rgba(245,236,215,0.7); }
+
+  .moon-details {
+    margin-top: 20px;
+    padding: 14px 18px;
+    background: rgba(184,134,11,0.06);
+    border: 1px solid rgba(184,134,11,0.2);
+    border-radius: 2px;
+    font-size: 0.88rem;
+    color: var(--brown);
+    font-style: italic;
+    text-align: center;
+    line-height: 1.7;
+  }
+
+  .error-msg {
+    background: rgba(193,68,14,0.08);
+    border: 1px solid rgba(193,68,14,0.3);
+    border-radius: 2px;
+    padding: 14px 18px;
+    color: var(--terracotta-d);
+    font-size: 0.95rem;
+    margin-top: 16px;
+    text-align: center;
+    display: none;
+  }
+
+  /* ── Footer note ── */
+  .footer-note {
+    text-align: center;
+    margin-top: 36px;
+    font-size: 0.8rem;
+    color: var(--gold);
+    font-style: italic;
+    opacity: 0.7;
+  }
+
+  @media (max-width: 560px) {
+    .card, .result-body { padding: 24px 20px 20px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .result-grid { grid-template-columns: 1fr; }
+    .result-header { padding: 22px 20px 18px; }
+    .padas-row { gap: 7px; }
+    .pada-chip { width: 46px; height: 46px; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <header>
+    <span class="om">ॐ</span>
+    <h1>Накшатра Пада Слог
+      <span>Nākṣatra Pāda Syllable Calculator</span>
+    </h1>
+    <div class="divider"><div class="divider-gem"></div></div>
+  </header>
+
+  <div class="card">
+    <form id="chartForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="bdate">Дата рождения</label>
+          <input type="date" id="bdate" required>
+        </div>
+        <div class="form-group">
+          <label for="btime">Время рождения</label>
+          <input type="time" id="btime" required value="12:00">
+        </div>
+        <div class="form-group full">
+          <label for="bcity">Город рождения</label>
+          <input type="text" id="bcity" placeholder="Москва, Дели, Лондон…" autocomplete="off" required>
+          <span class="hint">Введите название города — координаты определятся автоматически</span>
+        </div>
+        <div class="form-group">
+          <label for="blat">Широта (°)</label>
+          <input type="number" id="blat" step="0.0001" min="-90" max="90" placeholder="55.7558">
+        </div>
+        <div class="form-group">
+          <label for="blon">Долгота (°)</label>
+          <input type="number" id="blon" step="0.0001" min="-180" max="180" placeholder="37.6173">
+        </div>
+        <div class="form-group full">
+          <label for="btz">Часовой пояс (UTC±)</label>
+          <select id="btz" required>
+            <option value="-12">UTC−12</option><option value="-11">UTC−11</option>
+            <option value="-10">UTC−10</option><option value="-9">UTC−9</option>
+            <option value="-8">UTC−8</option><option value="-7">UTC−7</option>
+            <option value="-6">UTC−6</option><option value="-5">UTC−5</option>
+            <option value="-4">UTC−4</option><option value="-3">UTC−3</option>
+            <option value="-2">UTC−2</option><option value="-1">UTC−1</option>
+            <option value="0">UTC±0</option>
+            <option value="1">UTC+1</option><option value="2">UTC+2</option>
+            <option value="3" selected>UTC+3 (Москва)</option>
+            <option value="4">UTC+4</option><option value="5">UTC+5</option>
+            <option value="5.5">UTC+5:30 (Индия)</option>
+            <option value="6">UTC+6</option><option value="7">UTC+7</option>
+            <option value="8">UTC+8</option><option value="9">UTC+9</option>
+            <option value="10">UTC+10</option><option value="11">UTC+11</option>
+            <option value="12">UTC+12</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="submit">Рассчитать накшатру</button>
+      </div>
+    </form>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div id="result"></div>
+
+  <p class="footer-note">
+    Расчёт по аянамсе Лахири (Чайтрапакша) · алгоритм Меуса · сидерическая Луна
+  </p>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  NAKSHATRA DATA  (27 накшатр × 4 пады × слоги)
+// ══════════════════════════════════════════════════════════
+const NAKSHATRAS = [
+  { name:"Ашвини",         san:"Aśvinī",    deity:"Ашвини Кумары",  lord:"Кету",   syllables:["Чу","Че","Чо","Ла"] },
+  { name:"Бхарани",        san:"Bharaṇī",   deity:"Яма",            lord:"Венера", syllables:["Ли","Лу","Ле","Ло"] },
+  { name:"Криттика",       san:"Kṛttikā",   deity:"Агни",           lord:"Солнце", syllables:["А","И","У","Э"] },
+  { name:"Рохини",         san:"Rohiṇī",    deity:"Брахма",         lord:"Луна",   syllables:["О","Ва","Ви","Ву"] },
+  { name:"Мригашира",      san:"Mṛgaśirā",  deity:"Сома",           lord:"Марс",   syllables:["Ве","Во","Ка","Ки"] },
+  { name:"Ардра",          san:"Ārdrā",     deity:"Рудра",          lord:"Раху",   syllables:["Ку","Гха","Инг","Джха"] },
+  { name:"Пунарвасу",      san:"Punarvasu", deity:"Адити",          lord:"Юпитер", syllables:["Ке","Ко","Ха","Хи"] },
+  { name:"Пушья",          san:"Puṣya",     deity:"Брихаспати",     lord:"Сатурн", syllables:["Ху","Хе","Хо","Да"] },
+  { name:"Ашлеша",         san:"Āśleṣā",    deity:"Сарпы",          lord:"Меркурий",syllables:["Ди","Ду","Де","До"] },
+  { name:"Магха",          san:"Maghā",     deity:"Питры",          lord:"Кету",   syllables:["Ма","Ми","Му","Ме"] },
+  { name:"Пурва Пхалгуни", san:"Pūrva Phālgunī",deity:"Бхага",     lord:"Венера", syllables:["Мо","Та","Ти","Ту"] },
+  { name:"Уттара Пхалгуни",san:"Uttara Phālgunī",deity:"Арьяман",  lord:"Солнце", syllables:["Те","То","Па","Пи"] },
+  { name:"Хаста",          san:"Hasta",     deity:"Савитр",         lord:"Луна",   syllables:["Пу","Ша","На","Тха"] },
+  { name:"Читра",          san:"Citrā",     deity:"Тваштр",         lord:"Марс",   syllables:["Пе","По","Ра","Ри"] },
+  { name:"Свати",          san:"Svātī",     deity:"Ваю",            lord:"Раху",   syllables:["Ру","Ре","Ро","Та"] },
+  { name:"Вишакха",        san:"Viśākhā",   deity:"Индра-Агни",     lord:"Юпитер", syllables:["Ти","Ту","Те","То"] },
+  { name:"Анурадха",       san:"Anurādhā",  deity:"Митра",          lord:"Сатурн", syllables:["На","Ни","Ну","Не"] },
+  { name:"Джйештха",       san:"Jyeṣṭhā",   deity:"Индра",          lord:"Меркурий",syllables:["Но","Я","Йи","Ю"] },
+  { name:"Мула",           san:"Mūla",      deity:"Нирритти",       lord:"Кету",   syllables:["Е","Йо","Ба","Би"] },
+  { name:"Пурва Ашадха",   san:"Pūrva Āṣāḍhā",deity:"Апас",       lord:"Венера", syllables:["Бу","Дха","Пха","Дха"] },
+  { name:"Уттара Ашадха",  san:"Uttara Āṣāḍhā",deity:"Вишведевы",  lord:"Солнце", syllables:["Бе","Бо","Джа","Джи"] },
+  { name:"Шравана",        san:"Śravaṇa",   deity:"Вишну",          lord:"Луна",   syllables:["Джу","Дже","Джо","Гха"] },
+  { name:"Дхаништха",      san:"Dhaniṣṭhā", deity:"Ашта Васу",      lord:"Марс",   syllables:["Га","Ги","Гу","Ге"] },
+  { name:"Шатабхиша",      san:"Śatabhiṣā", deity:"Варуна",         lord:"Раху",   syllables:["Го","Са","Си","Су"] },
+  { name:"Пурва Бхадрапада",san:"Pūrva Bhādrapadā",deity:"Аджа Экапад",lord:"Юпитер",syllables:["Се","Со","Да","Ди"] },
+  { name:"Уттара Бхадрапада",san:"Uttara Bhādrapadā",deity:"Ахир Будхнья",lord:"Сатурн",syllables:["Ду","Тха","Джха","Да"] },
+  { name:"Ревати",         san:"Revatī",    deity:"Пушан",          lord:"Меркурий",syllables:["Де","До","Ча","Чи"] },
+];
+
+// Деванагари слоги (для отображения)
+const DEVANAGARI = {
+  "Чу":"चु","Че":"चे","Чо":"चो","Ла":"ला",
+  "Ли":"ली","Лу":"लु","Ле":"ले","Ло":"लो",
+  "А":"अ","И":"इ","У":"उ","Э":"ए",
+  "О":"ओ","Ва":"वा","Ви":"वि","Ву":"वु",
+  "Ве":"वे","Во":"वो","Ка":"का","Ки":"कि",
+  "Ку":"कु","Гха":"घा","Инг":"ङ","Джха":"झा",
+  "Ке":"के","Ко":"को","Ха":"हा","Хи":"हि",
+  "Ху":"हु","Хе":"हे","Хо":"हो","Да":"दा",
+  "Ди":"दि","Ду":"दु","Де":"दे","До":"दो",
+  "Ма":"मा","Ми":"मि","Му":"मु","Ме":"मे",
+  "Мо":"मो","Та":"ता","Ти":"ति","Ту":"तु",
+  "Те":"ते","То":"तो","Па":"पा","Пи":"पि",
+  "Пу":"पु","Ша":"शा","На":"ना","Тха":"था",
+  "Пе":"पे","По":"पो","Ра":"रा","Ри":"रि",
+  "Ру":"रु","Ре":"रे","Ро":"रो",
+  "Ну":"नु","Не":"ने","Но":"नो","Я":"या","Йи":"यि","Ю":"यु",
+  "Е":"ये","Йо":"यो","Ба":"बा","Би":"बि",
+  "Бу":"बु","Дха":"धा","Пха":"फा",
+  "Бе":"बे","Бо":"बो","Джа":"जा","Джи":"जि",
+  "Джу":"जु","Дже":"जे","Джо":"जो","Гха2":"घा",
+  "Га":"गा","Ги":"गि","Гу":"गु","Ге":"गे",
+  "Го":"गो","Са":"सा","Си":"си","Су":"सु",
+  "Се":"से","Со":"सो",
+  "Тха":"था","Джха":"झा",
+  "Ча":"चा","Чи":"चि",
+  "Ни":"नि",
+};
+
+// ══════════════════════════════════════════════════════════
+//  ASTRONOMICAL FUNCTIONS
+// ══════════════════════════════════════════════════════════
+
+function toRad(d){ return d * Math.PI / 180; }
+function toDeg(r){ return r * 180 / Math.PI; }
+function norm360(d){ return ((d % 360) + 360) % 360; }
+
+// Julian Day Number from UTC datetime
+function julianDay(year, month, day, hour, minute, second){
+  // Meeus, Astronomical Algorithms ch.7
+  if(month <= 2){ year--; month += 12; }
+  const A = Math.floor(year / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  const JD = Math.floor(365.25*(year+4716)) + Math.floor(30.6001*(month+1)) + day + B - 1524.5;
+  return JD + (hour + minute/60 + second/3600) / 24;
+}
+
+// Moon's ecliptic longitude (degrees, geometric, low-precision Meeus ch.47)
+function moonLongitude(JD){
+  const T = (JD - 2451545.0) / 36525;
+  const T2 = T*T, T3 = T2*T, T4 = T3*T;
+
+  // Moon's mean longitude
+  let Lp = 218.3164477 + 481267.88123421*T - 0.0015786*T2 + T3/538841 - T4/65194000;
+  // Moon's mean elongation
+  let D  = 297.8501921 + 445267.1114034*T - 0.0018819*T2 + T3/545868  - T4/113065000;
+  // Sun's mean anomaly
+  let M  = 357.5291092 + 35999.0502909*T  - 0.0001536*T2 + T3/24490000;
+  // Moon's mean anomaly
+  let Mp = 134.9633964 + 477198.8675055*T + 0.0087414*T2 + T3/69699   - T4/14712000;
+  // Moon's argument of latitude
+  let F  = 93.2720950  + 483202.0175233*T - 0.0036539*T2 - T3/3526000 + T4/863310000;
+  // Correction terms
+  const A1 = 119.75 + 131.849*T;
+  const A2 = 53.09  + 479264.290*T;
+  const A3 = 313.45 + 481266.484*T;
+
+  Lp = norm360(Lp); D = norm360(D); M = norm360(M);
+  Mp = norm360(Mp); F = norm360(F);
+
+  const r = toRad;
+
+  // Periodic terms for longitude (Meeus Table 47.A, major terms)
+  let SigmaL = 0;
+  const terms_L = [
+    [0,0,1,0, 6288774], [2,0,-1,0, 1274027], [2,0,0,0, 658314],
+    [0,0,2,0, 213618],  [0,1,0,0,-185116],   [0,0,0,2,-114332],
+    [2,0,-2,0, 58793],  [2,-1,-1,0, 57066],  [2,0,1,0, 53322],
+    [2,-1,0,0, 45758],  [0,1,-1,0,-40923],   [1,0,0,0,-34720],
+    [0,1,1,0,-30383],   [2,0,0,-2, 15327],   [0,0,1,2,-12528],
+    [0,0,1,-2, 10980],  [4,0,-1,0, 10675],   [0,0,3,0, 10034],
+    [4,0,-2,0,  8548],  [2,1,-1,0, -7888],   [2,1,0,0, -6766],
+    [1,0,-1,0, -5163],  [1,1,0,0,  4987],    [2,-1,1,0,  4036],
+    [2,0,2,0,  3994],   [4,0,0,0,  3861],    [2,0,-3,0,  3665],
+    [0,1,-2,0, -2689],  [2,0,-1,2, -2602],   [2,-1,-2,0, 2390],
+    [1,-1,0,0, -2348],  [2,-2,0,0,  2236],   [0,1,2,0, -2120],
+    [0,2,0,0, -2069],   [2,-2,-1,0, 2048],   [2,0,1,-2,-1773],
+    [2,0,0,2, -1595],   [4,-1,-1,0, 1215],   [0,0,2,2, -1110],
+    [3,0,-1,0,  -892],  [2,1,1,0,   -810],   [4,-1,-2,0,  759],
+    [0,2,-1,0,  -713],  [2,2,-1,0,  -700],   [2,1,-2,0,  691],
+    [2,-1,0,-2, 596],   [4,0,1,0,   549],    [0,0,4,0,   537],
+    [4,-1,0,0,   520],  [1,0,-2,0,  -487],   [2,1,0,-2, -399],
+    [0,0,2,-2,  -381],  [1,1,1,0,   351],    [3,0,-2,0,  -340],
+    [4,0,-3,0,   330],  [2,-1,2,0,   327],   [0,2,1,0,  -323],
+    [1,1,-1,0,   299],  [2,0,3,0,   294],
+  ];
+  for(const [d,m,mp,f,coef] of terms_L){
+    let arg = d*D + m*M + mp*Mp + f*F;
+    let c = coef;
+    if(Math.abs(m)===1) c *= 1 - 0.002516*T - 0.0000074*T2; // E correction
+    if(Math.abs(m)===2) c *= Math.pow(1 - 0.002516*T - 0.0000074*T2, 2);
+    SigmaL += c * Math.sin(r(arg));
+  }
+  // Additive terms
+  SigmaL += 3958*Math.sin(r(A1)) + 1962*Math.sin(r(Lp - F)) + 318*Math.sin(r(A2));
+
+  const lambda = norm360(Lp + SigmaL/1000000);
+  return lambda;
+}
+
+// Lahiri ayanamsa (degrees) for JD
+function lahiriAyanamsa(JD){
+  const T = (JD - 2451545.0) / 36525;
+  // Lahiri: reference epoch 285 AD, ~23.85° at J2000 minus precession
+  // More precise formula from the Lahiri/Chaitrapaksha definition:
+  return norm360(23.85 + (50.2564 + 0.0222*T)*T / 3600 + (JD - 2415020.3135) * 50.2564/1296000);
+}
+
+// Better Lahiri ayanamsa using the standard formula
+function ayanamsaLahiri(JD){
+  // Lahiri (Indian Astronomical Ephemeris standard)
+  const T = (JD - 2451545.0) / 36525.0;
+  // Precession of equinoxes
+  const pA = 5029.097 * T + 1.558 * T * T; // arcsec
+  // Lahiri: sidereal vernal point was coincident with tropical at JD 588465.5 (285 AD approx.)
+  // ayanamsa at J2000 = 23°51'11" = 23.8531°
+  const ayan2000 = 23.0 + 51.0/60.0 + 11.0/3600.0; // 23.8531°
+  const ayan = ayan2000 + pA/3600.0 * (T/1.0) - (pA/3600.0); // simplify
+  // Standard approximation used in practice:
+  return norm360(ayan2000 + (JD - 2451545.0) * 50.2564 / 1296000);
+}
+
+function calcNakshatraPada(year, month, day, hour, minute, tzOffset){
+  const utcHour = hour - tzOffset;
+  const JD = julianDay(year, month, day, Math.floor(utcHour), minute, 0)
+           + (utcHour - Math.floor(utcHour));
+
+  const moonLon = moonLongitude(JD);
+  const ayanamsa = ayanamsaLahiri(JD);
+  const sidLon = norm360(moonLon - ayanamsa);
+
+  const nakshatraIndex = Math.floor(sidLon / (360/27));      // 0..26
+  const padaIndex      = Math.floor((sidLon % (360/27)) / (360/108)); // 0..3
+
+  return {
+    JD,
+    moonLon,
+    ayanamsa,
+    sidLon,
+    nakshatraIndex,
+    padaIndex,
+    nakshatra: NAKSHATRAS[nakshatraIndex],
+    syllable: NAKSHATRAS[nakshatraIndex].syllables[padaIndex],
+    degInNakshatra: sidLon % (360/27),
+  };
+}
+
+// ══════════════════════════════════════════════════════════
+//  GEOCODING (OpenStreetMap Nominatim — бесплатно)
+// ══════════════════════════════════════════════════════════
+async function geocodeCity(cityName){
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1`;
+  try {
+    const resp = await fetch(url, { headers:{ 'Accept-Language':'ru,en' } });
+    const data = await resp.json();
+    if(data && data.length > 0){
+      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+    }
+  } catch(e){}
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════
+//  UI
+// ══════════════════════════════════════════════════════════
+const form    = document.getElementById('chartForm');
+const resultEl= document.getElementById('result');
+const errorEl = document.getElementById('errorMsg');
+const cityEl  = document.getElementById('bcity');
+const latEl   = document.getElementById('blat');
+const lonEl   = document.getElementById('blon');
+
+// Approximate UTC offset from longitude (integer hours)
+function tzFromLon(lon){
+  const tz = Math.round(lon / 15);
+  // Find closest option value in select
+  const sel = document.getElementById('btz');
+  let best = null, bestDiff = Infinity;
+  for(const opt of sel.options){
+    const diff = Math.abs(parseFloat(opt.value) - tz);
+    if(diff < bestDiff){ bestDiff = diff; best = opt.value; }
+  }
+  return best;
+}
+
+let lastGeocodedCity = '';
+
+async function applyGeocode(cityName){
+  if(!cityName || cityName === lastGeocodedCity) return;
+  const geo = await geocodeCity(cityName);
+  if(geo){
+    latEl.value = geo.lat.toFixed(4);
+    lonEl.value = geo.lon.toFixed(4);
+    lastGeocodedCity = cityName;
+    // Auto-set timezone from longitude
+    const tzVal = tzFromLon(geo.lon);
+    if(tzVal !== null) document.getElementById('btz').value = tzVal;
+    return geo;
+  }
+  return null;
+}
+
+// Clear coords when city text changes so stale values don't block re-geocoding
+cityEl.addEventListener('input', () => {
+  lastGeocodedCity = '';
+  latEl.value = '';
+  lonEl.value = '';
+});
+
+// Geocode on blur for immediate feedback
+cityEl.addEventListener('blur', () => applyGeocode(cityEl.value.trim()));
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorEl.style.display = 'none';
+
+  const dateVal = document.getElementById('bdate').value;
+  const timeVal = document.getElementById('btime').value;
+  const city    = cityEl.value.trim();
+
+  if(!dateVal || !timeVal){ showError('Введите дату и время рождения.'); return; }
+
+  // Always geocode on submit if city provided and coords missing
+  if(city && (!latEl.value || !lonEl.value)){
+    const geo = await applyGeocode(city);
+    if(!geo && !latEl.value){
+      showError(`Город «${city}» не найден. Введите координаты вручную.`);
+      return;
+    }
+  }
+
+  const tzVal = parseFloat(document.getElementById('btz').value);
+  const [yr, mo, dy] = dateVal.split('-').map(Number);
+  const [hr, mn]     = timeVal.split(':').map(Number);
+
+  const res = calcNakshatraPada(yr, mo, dy, hr, mn, tzVal);
+  renderResult(res, dateVal, timeVal, tzVal, city);
+});
+
+function showError(msg){
+  errorEl.textContent = msg;
+  errorEl.style.display = 'block';
+}
+
+function renderResult(r, dateVal, timeVal, tzVal, city){
+  const { nakshatra, padaIndex, syllable, sidLon, ayanamsa, moonLon, degInNakshatra } = r;
+
+  const devan = DEVANAGARI[syllable] || '';
+  const nakshatraDeg = (360/27);
+  const degInPada = degInNakshatra % (nakshatraDeg/4);
+  const percentDone = (degInNakshatra / nakshatraDeg * 100).toFixed(1);
+
+  // Format lon/lat nicely
+  const lat = latEl.value ? `${parseFloat(latEl.value).toFixed(2)}°` : '—';
+  const lon = lonEl.value ? `${parseFloat(lonEl.value).toFixed(2)}°` : '—';
+
+  const padas = nakshatra.syllables.map((syl, i) => {
+    const dev = DEVANAGARI[syl] || '';
+    return `<div class="pada-chip ${i===padaIndex?'active':''}">
+      <span class="chip-num">Пада ${i+1}</span>
+      <span>${syl}</span>
+      ${dev ? `<span style="font-size:0.8em;opacity:0.7">${dev}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  const tzStr = tzVal >= 0 ? `UTC+${tzVal}` : `UTC${tzVal}`;
+  const dateStr = new Date(dateVal+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+
+  resultEl.innerHTML = `
+  <div class="result-card">
+    <div class="result-header">
+      <span class="syllable-main">${syllable}</span>
+      ${devan ? `<span class="syllable-devanagari">${devan}</span>` : ''}
+    </div>
+    <div class="result-body">
+      <div class="result-grid">
+        <div class="result-item">
+          <div class="result-label">Накшатра</div>
+          <div class="result-value large">${nakshatra.name}</div>
+          <div class="nakshatra-deity">${nakshatra.san}</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Пада</div>
+          <div class="result-value large">${padaIndex+1} из 4</div>
+          <div class="nakshatra-deity">${(degInNakshatra).toFixed(2)}° внутри накшатры</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Владыка накшатры</div>
+          <div class="result-value">${nakshatra.lord}</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Адхи-дева</div>
+          <div class="result-value">${nakshatra.deity}</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Имяначальный слог</div>
+          <div class="result-value large">${syllable} ${devan}</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Дата · Время · Зона</div>
+          <div class="result-value">${dateStr}</div>
+          <div class="nakshatra-deity">${timeVal} · ${tzStr}${city ? ' · '+city : ''}</div>
+        </div>
+      </div>
+
+      <div class="all-padas">
+        <div class="all-padas-title">Все четыре пады накшатры ${nakshatra.name}</div>
+        <div class="padas-row">${padas}</div>
+      </div>
+
+      <div class="moon-details">
+        Луна тропическая: ${moonLon.toFixed(4)}° &nbsp;·&nbsp;
+        Аянамса Лахири: ${ayanamsa.toFixed(4)}° &nbsp;·&nbsp;
+        Луна сидерическая: ${sidLon.toFixed(4)}°<br>
+        Накшатра № ${r.nakshatraIndex+1}/27 &nbsp;·&nbsp;
+        Завершено в накшатре: ${percentDone}%
+      </div>
+    </div>
+  </div>`;
+
+  resultEl.style.display = 'block';
+  resultEl.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+</script>
+</body>
+</html>
