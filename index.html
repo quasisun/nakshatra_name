@@ -466,6 +466,16 @@ async function computeNakshatra(){
     '</p>';
 }
 
+/* ── встраивание в iframe (Тильда): убрать верхний отступ под меню + авто-высота ── */
+(function(){
+  if(window.parent===window) return;               // не в iframe — ничего не делаем
+  var app=document.querySelector('.astro-app'); if(app) app.style.setProperty('--app-top-offset','16px');
+  var post=function(){ try{ parent.postMessage({nakshatraHeight:document.documentElement.scrollHeight},'*'); }catch(e){} };
+  addEventListener('load',post); addEventListener('resize',post);
+  try{ new MutationObserver(post).observe(document.getElementById('result'),{childList:true,subtree:true}); }catch(e){}
+  setInterval(post,1000);
+})();
+
 /* ── старт ── */
 document.getElementById('year').textContent=new Date().getFullYear();
 ensureEngine();      // прогреваем эфемериды заранее
