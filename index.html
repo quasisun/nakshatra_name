@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Накшатра Луны</title>
+<link rel="stylesheet" href="astro-app.css">
+<style>
+  /* ── дополнения только для этого приложения ── */
+  .field-row{display:flex;gap:16px;flex-wrap:wrap}
+  .field-row .astro-field{flex:1 1 180px;margin-bottom:16px}
+
+  .city-wrap{position:relative}
+  .ac-dropdown{position:absolute;z-index:60;left:0;right:0;top:100%;
+    background:#fff;border:2px solid var(--c-orange);border-top:none;
+    border-radius:0 0 12px 12px;max-height:340px;overflow-y:auto;
+    box-shadow:0 12px 28px rgba(0,0,0,.16)}
+  .ac-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.07)}
+  .ac-item:last-child{border-bottom:none}
+  .ac-item:hover,.ac-item.active{background:#fdeee9}
+  .ac-name{font-weight:700;color:var(--c-ink)}
+  .ac-admin{font-size:.82rem;color:var(--c-ink-soft);margin-top:1px}
+  .ac-empty{padding:14px;color:var(--c-ink-soft)}
+
+  .city-chosen{margin:2px 0 0;font-size:.9rem;color:var(--c-ink-soft)}
+  .city-chosen b{color:var(--c-ink)}
+
+  details.manual{margin:4px 0 18px;border:1px solid var(--c-line);border-radius:10px;padding:0 14px}
+  details.manual[open]{padding-bottom:12px}
+  details.manual summary{cursor:pointer;padding:12px 0;color:var(--c-red);font-weight:600}
+
+  /* карточка результата — в фирменном стиле заголовков (Jaipur, градиент) */
+  .result-naksh{margin:8px 0 4px;border-radius:16px;text-align:center;
+    background:linear-gradient(135deg,var(--c-red) 0%,var(--c-orange) 100%);
+    color:#fff;padding:26px 18px 24px}
+  .rn-label{font-size:.95rem;letter-spacing:.04em;text-transform:uppercase;opacity:.92}
+  .rn-name{font-family:var(--font-display);font-weight:400;line-height:1.15;
+    font-size:clamp(2.6rem,9vw,4rem);margin:6px 0 2px}
+  .rn-sub{font-size:1rem;opacity:.92}
+  .calc-details{margin:14px 2px 0;font-size:.86rem;color:var(--c-ink-soft);line-height:1.5}
+  .calc-details b{color:var(--c-ink)}
+  .err{color:var(--c-red);font-weight:600}
+</style>
+</head>
+
+<body>
+<div class="astro-app">
+
+  <header class="astro-header">
+    <h1 class="astro-title">Накшатра&nbsp;Луны</h1>
+    <p class="astro-subtitle">Ведический расчёт · швейцарские эфемериды · аянамша Лахири</p>
+  </header>
+
+  <div id="engineBadge" class="engine-badge loading">Загрузка швейцарских эфемерид…</div>
+
+  <section class="astro-section">
+    <div class="astro-card">
+
+      <!-- Место рождения: офлайн-поиск -->
+      <div class="astro-field city-wrap">
+        <label for="city">Место рождения</label>
+        <input id="city" type="text" autocomplete="off" spellcheck="false"
+               placeholder="Начните вводить — Россия целиком, вкл. сёла и деревни">
+        <div id="acDrop" class="ac-dropdown" hidden></div>
+        <p id="cityChosen" class="city-chosen"></p>
+      </div>
+
+      <!-- Дата и время -->
+      <div class="field-row">
+        <div class="astro-field">
+          <label for="bdate">Дата рождения</label>
+          <input id="bdate" type="date">
+        </div>
+        <div class="astro-field">
+          <label for="btime">Время рождения</label>
+          <input id="btime" type="time">
+        </div>
+      </div>
+
+      <!-- Ручной пояс, если место не нашлось -->
+      <details class="manual">
+        <summary>Место не нашлось? Указать часовой пояс вручную</summary>
+        <div class="astro-field" style="margin-top:6px">
+          <label for="tzManual">Часовой пояс места рождения</label>
+          <select id="tzManual"></select>
+          <p class="muted" style="margin:6px 0 0;font-size:.82rem">
+            Историческое смещение (декретное время, летнее/зимнее, реформы) будет учтено
+            автоматически по дате рождения. Координаты на накшатру Луны не влияют.
+          </p>
+        </div>
+      </details>
+
+      <button class="astro-btn astro-btn--block" id="calcBtn" onclick="computeNakshatra()">
+        Рассчитать накшатру
+      </button>
+
+      <div id="result"></div>
+    </div>
+  </section>
+
+  <footer class="astro-footer">
+    <p class="astro-disclaimer">
+      <strong>О методике.</strong>
+      Вычисляется только <b>накшатра Луны</b> в ведической (сидерической) системе,
+      аянамша Лахири (Читрапакша). Долгота Луны — геоцентрическая, поэтому результат
+      зависит от даты, времени и часового пояса места, но не от координат.
+      Часовой пояс берётся <b>исторический</b> — то смещение, что реально действовало
+      в дату рождения (декретное время с 1930, летнее время 1981–2010, реформы 2011 и 2014
+      и региональные изменения учтены). Результат носит справочно-просветительский характер.
+    </p>
+    <p class="astro-credits">
+      Эфемериды: Swiss Ephemeris (Astrodienst AG, лицензия AGPL/коммерческая).
+      База мест: GeoNames (CC&nbsp;BY&nbsp;4.0, geonames.org).
+      Часовые пояса: IANA tz database через moment-timezone (MIT).
+    </p>
+    <p class="astro-copyright">
+      © <span id="year"></span> Индийская астрология со Светланой Кройцер · goroskop1008.ru
+    </p>
+  </footer>
+
+</div>
+
+<!-- исторические часовые пояса (офлайн, с полной историей) -->
+<script src="vendor/moment.min.js"></script>
+<script src="vendor/moment-timezone-with-data.min.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   АСТРОНОМИЧЕСКИЙ ДВИЖОК  (перенесён из «Джйотиш-сюиты» / «Камней»)
+   Swiss Ephemeris (WASM, режим Moshier) → тропическая долгота Луны,
+   минус аянамша Лахири → сидерическая → накшатра. Если WASM не загрузился
+   (например, открыли файлом, без сервера) — аналитический запасной расчёт
+   Луны (Meeus), точности которого с запасом хватает для накшатры.
+   ════════════════════════════════════════════════════════════════════ */
+const D2R = Math.PI/180, R2D = 180/Math.PI;
+function nd(d){return((d%360)+360)%360;}
+
+// Аянамша Лахири (Читрапакша)
+function lahiriAyanamsa(JD){
+  const t=(JD-2451545.0)/36525.0;
+  return 23.85306 + 1.3968878*t + 0.0003071*t*t;
+}
+// Юлианский день (UT) из гражданского времени + смещение пояса (часы)
+function jdLocal(y,mo,d,h,mi,tz){
+  const ut=h+mi/60-tz;
+  let Y=y,M=mo,D=d+ut/24;
+  if(M<=2){Y--;M+=12;}
+  const A=Math.floor(Y/100),B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(Y+4716))+Math.floor(30.6001*(M+1))+D+B-1524.5;
+}
+// Аналитическая долгота Луны (Meeus, сокращённый ряд) — запасной расчёт
+function moonLonMeeus(JD){
+  const T=(JD-2451545)/36525;
+  const L=nd(218.3164477+481267.88123421*T-0.0015786*T*T);
+  const Dm=nd(297.8501921+445267.1114034*T-0.0018819*T*T)*D2R;
+  const M=nd(357.5291092+35999.0502909*T-0.0001536*T*T)*D2R;
+  const Mp=nd(134.9633964+477198.8675055*T+0.0087414*T*T)*D2R;
+  const F=nd(93.2720950+483202.0175233*T-0.0036539*T*T)*D2R;
+  const E=1-0.002516*T-0.0000074*T*T;
+  const dl=6.288774*Math.sin(Mp)+1.274027*Math.sin(2*Dm-Mp)+0.658314*Math.sin(2*Dm)+0.213618*Math.sin(2*Mp)
+   -0.185116*E*Math.sin(M)-0.114332*Math.sin(2*F)+0.058793*Math.sin(2*Dm-2*Mp)+0.057066*E*Math.sin(2*Dm-M-Mp)
+   +0.053322*Math.sin(2*Dm+Mp)+0.045758*E*Math.sin(2*Dm-M)-0.040923*E*Math.sin(M-Mp)-0.034720*Math.sin(Dm)
+   -0.030383*E*Math.sin(M+Mp)+0.015327*Math.sin(2*Dm-2*F)-0.012528*Math.sin(Mp+2*F)+0.010980*Math.sin(Mp-2*F)
+   +0.010675*Math.sin(4*Dm-Mp)+0.010034*Math.sin(3*Mp)+0.008548*Math.sin(4*Dm-2*Mp)-0.007888*E*Math.sin(2*Dm+M-Mp)
+   -0.006766*E*Math.sin(2*Dm+M)-0.005163*Math.sin(Dm-Mp)+0.004987*E*Math.sin(Dm+M)+0.004036*E*Math.sin(2*Dm-M+Mp)
+   +0.003994*Math.sin(2*Dm+2*Mp)+0.003861*Math.sin(4*Dm)+0.003665*Math.sin(2*Dm-3*Mp)-0.002689*E*Math.sin(M-2*Mp)
+   -0.002602*Math.sin(2*Dm-Mp+2*F)+0.002390*E*Math.sin(2*Dm-M-2*Mp)-0.002348*Math.sin(Dm+Mp)+0.002236*E*Math.sin(2*Dm-2*M)
+   -0.002120*E*Math.sin(M+2*Mp)-0.002069*E*E*Math.sin(2*M)+0.002048*E*E*Math.sin(2*Dm-2*M-Mp)-0.001773*Math.sin(2*Dm+Mp-2*F)
+   -0.001595*Math.sin(2*Dm+2*F)+0.001215*E*Math.sin(4*Dm-M-Mp)-0.001110*Math.sin(2*Mp+2*F)-0.000892*Math.sin(3*Dm-Mp)
+   -0.000811*E*Math.sin(M+Mp+2*F)+0.000761*E*Math.sin(4*Dm-M-2*Mp)+0.000704*E*E*Math.sin(2*Dm-2*M+Mp)-0.000630*E*Math.sin(3*Dm+Mp);
+  return nd(L+dl);
+}
+
+// ── Движок Swiss Ephemeris (WASM) ──
+let SWE=null, SWE_READY=false, _enginePromise=null;
+function ensureEngine(){ if(!_enginePromise) _enginePromise=initEngine(); return _enginePromise; }
+async function initEngine(){
+  const badge=document.getElementById('engineBadge');
+  try{
+    if(typeof window.exports==='undefined'){ window.exports={}; window.module={exports:window.exports}; }
+    const mod=await import('./swisseph-browser.js');
+    const SwissEphemeris=mod.SwissEphemeris||window.SwissEphemeris||mod.default;
+    const inst=new SwissEphemeris();
+    await inst.init();
+    const m=inst.module, GREG=1;
+    SWE={
+      julday:(y,mo,d,hUT)=> m.ccall('swe_julday_wrap','number',
+        ['number','number','number','number','number'],[y,mo,d,hUT,GREG]),
+      calc:(jd,body,flags)=>{
+        const xx=m._malloc(6*8), se=m._malloc(256);
+        const r=m.ccall('swe_calc_ut_wrap','number',
+          ['number','number','number','number','number'],[jd,body,flags,xx,se]);
+        const lon=m.getValue(xx,'double'); m._free(xx); m._free(se);
+        if(r<0) throw new Error('swe_calc_ut failed');
+        return lon;
+      }
+    };
+    if(!isFinite(SWE.calc(SWE.julday(2000,1,1,12),1,4|256))) throw new Error('no result');
+    SWE_READY=true;
+    badge.className='engine-badge';
+    badge.textContent='Швейцарские эфемериды загружены (Moshier) · аянамша Лахири';
+  }catch(e){
+    console.warn('Swiss Ephemeris init failed — analytic fallback', e);
+    badge.className='engine-badge fallback';
+    badge.textContent='Эфемериды не загрузились — приближённый расчёт Луны. Откройте через сервер (python3 -m http.server).';
+  }
+}
+
+// 27 накшатр (русское имя + санскрит) — только идентификация, без трактовок
+const NAKSHATRAS=[
+  ["Ашвини","Aśvinī"],["Бхарани","Bharaṇī"],["Криттика","Kṛttikā"],["Рохини","Rohiṇī"],
+  ["Мригашира","Mṛgaśirā"],["Ардра","Ārdrā"],["Пунарвасу","Punarvasu"],["Пушья","Puṣya"],
+  ["Ашлеша","Āśleṣā"],["Магха","Maghā"],["Пурва Пхалгуни","Pūrva Phālgunī"],
+  ["Уттара Пхалгуни","Uttara Phālgunī"],["Хаста","Hasta"],["Читра","Citrā"],["Свати","Svātī"],
+  ["Вишакха","Viśākhā"],["Анурадха","Anurādhā"],["Джйештха","Jyeṣṭhā"],["Мула","Mūla"],
+  ["Пурва Ашадха","Pūrva Āṣāḍhā"],["Уттара Ашадха","Uttara Āṣāḍhā"],["Шравана","Śravaṇa"],
+  ["Дхаништха","Dhaniṣṭhā"],["Шатабхиша","Śatabhiṣā"],["Пурва Бхадрапада","Pūrva Bhādrapadā"],
+  ["Уттара Бхадрапада","Uttara Bhādrapadā"],["Ревати","Revatī"]
+];
+
+/* ════════════════════════════════════════════════════════════════════
+   ОФЛАЙН-БАЗА МЕСТ  (GeoNames: вся Россия с сёлами/деревнями + города мира)
+   ════════════════════════════════════════════════════════════════════ */
+let META=null, C_name=[], C_norm=[], C_lat=null, C_lon=null, C_admin=null, C_zone=null;
+let CITIES_READY=false;
+
+function normRu(s){ return s.toLowerCase().replace(/ё/g,'е').replace(/[’'`]/g,'').trim(); }
+
+async function loadCities(){
+  const status=document.getElementById('cityChosen');
+  try{
+    status.textContent='Загрузка базы мест…';
+    const [metaResp, gzResp]=await Promise.all([
+      fetch('data/cities-meta.json'),
+      fetch('data/cities.txt.gz')
+    ]);
+    META=await metaResp.json();
+    let text;
+    if('DecompressionStream' in window){
+      const ds=new DecompressionStream('gzip');
+      const stream=gzResp.body.pipeThrough(ds);
+      text=await new Response(stream).text();
+    }else{
+      // запасной путь: несжатый файл
+      text=await (await fetch('data/cities.txt')).text();
+    }
+    const lines=text.split('\n');
+    const n=lines.length-1;
+    C_lat=new Int32Array(n); C_lon=new Int32Array(n);
+    C_admin=new Int32Array(n); C_zone=new Int32Array(n);
+    C_name=new Array(n); C_norm=new Array(n);
+    let k=0;
+    for(let i=0;i<n;i++){
+      const ln=lines[i]; if(!ln) continue;
+      const t=ln.split('\t');
+      C_name[k]=t[0]; C_norm[k]=normRu(t[0]);
+      C_lat[k]=+t[1]; C_lon[k]=+t[2]; C_admin[k]=+t[3]; C_zone[k]=+t[4];
+      k++;
+    }
+    if(k<n){ C_name.length=k; C_norm.length=k; }
+    CITIES_READY=true;
+    status.textContent='';
+    buildManualZones();
+  }catch(e){
+    console.warn('cities load failed',e);
+    status.innerHTML='<span class="err">База мест не загрузилась.</span> Запустите через локальный сервер '+
+      '(python3 -m http.server) либо укажите часовой пояс вручную ниже.';
+    buildManualZones();
+  }
+}
+
+// поиск по префиксу (приоритет), затем по вхождению; крупные города выше (база отсортирована)
+function searchCities(q){
+  q=normRu(q);
+  if(q.length<2) return [];
+  const pre=[], inc=[], LIMIT=40;
+  for(let i=0;i<C_norm.length;i++){
+    const s=C_norm[i];
+    const p=s.indexOf(q);
+    if(p===0){ if(pre.length<LIMIT) pre.push(i); }
+    else if(p>0 && inc.length<LIMIT) inc.push(i);
+    if(pre.length>=LIMIT) break;
+  }
+  return pre.concat(inc).slice(0,LIMIT);
+}
+
+/* ── автодополнение ── */
+let acItems=[], acActive=-1, selected=null;
+const cityInput=document.getElementById('city');
+const acDrop=document.getElementById('acDrop');
+const cityChosen=document.getElementById('cityChosen');
+let acTimer=null;
+
+cityInput.addEventListener('input',()=>{
+  selected=null; cityChosen.textContent='';
+  clearTimeout(acTimer);
+  acTimer=setTimeout(runSearch,110);
+});
+cityInput.addEventListener('keydown',e=>{
+  if(acDrop.hidden) return;
+  if(e.key==='ArrowDown'){ e.preventDefault(); moveAc(1); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); moveAc(-1); }
+  else if(e.key==='Enter'){ if(acActive>=0){ e.preventDefault(); pickCity(acItems[acActive]); } }
+  else if(e.key==='Escape'){ hideAc(); }
+});
+document.addEventListener('click',e=>{ if(!e.target.closest('.city-wrap')) hideAc(); });
+
+function runSearch(){
+  if(!CITIES_READY){ return; }
+  const q=cityInput.value;
+  acItems=searchCities(q);
+  if(!q.trim() || acItems.length===0){
+    if(q.trim().length>=2){ acDrop.innerHTML='<div class="ac-empty">Ничего не найдено. Можно указать пояс вручную ниже.</div>'; acDrop.hidden=false; }
+    else hideAc();
+    acActive=-1; return;
+  }
+  acDrop.innerHTML=acItems.map((idx,j)=>
+    '<div class="ac-item'+(j===0?' active':'')+'" data-j="'+j+'">'+
+      '<div class="ac-name">'+esc(C_name[idx])+'</div>'+
+      '<div class="ac-admin">'+esc(META.admins[C_admin[idx]]||'')+'</div>'+
+    '</div>').join('');
+  acActive=0;
+  acDrop.hidden=false;
+  acDrop.querySelectorAll('.ac-item').forEach(el=>{
+    el.addEventListener('click',()=>pickCity(acItems[+el.dataset.j]));
+  });
+}
+function moveAc(d){
+  const els=acDrop.querySelectorAll('.ac-item'); if(!els.length) return;
+  if(acActive>=0) els[acActive].classList.remove('active');
+  acActive=(acActive+d+els.length)%els.length;
+  els[acActive].classList.add('active'); els[acActive].scrollIntoView({block:'nearest'});
+}
+function hideAc(){ acDrop.hidden=true; acActive=-1; }
+function pickCity(idx){
+  selected={ name:C_name[idx], admin:META.admins[C_admin[idx]]||'',
+             lat:C_lat[idx]/1e4, lon:C_lon[idx]/1e4, zone:META.zones[C_zone[idx]] };
+  cityInput.value=C_name[idx];
+  hideAc();
+  cityChosen.innerHTML='<b>'+esc(selected.name)+'</b>, '+esc(selected.admin)+
+    ' · пояс <b>'+esc(selected.zone)+'</b> · '+selected.lat.toFixed(3)+', '+selected.lon.toFixed(3);
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ── ручной выбор пояса (запасной) ── */
+const MANUAL_ZONES=[
+  ['Россия и СНГ',[
+    ['Europe/Kaliningrad','Калининград (МСК−1)'],
+    ['Europe/Moscow','Москва, Санкт-Петербург (МСК)'],
+    ['Europe/Samara','Самара, Ижевск (МСК+1)'],
+    ['Asia/Yekaterinburg','Екатеринбург, Пермь, Уфа, Челябинск (МСК+2)'],
+    ['Asia/Omsk','Омск (МСК+3)'],
+    ['Asia/Novosibirsk','Новосибирск (МСК+4)'],
+    ['Asia/Krasnoyarsk','Красноярск, Барнаул (МСК+4)'],
+    ['Asia/Irkutsk','Иркутск (МСК+5)'],
+    ['Asia/Yakutsk','Якутск (МСК+6)'],
+    ['Asia/Vladivostok','Владивосток, Хабаровск (МСК+7)'],
+    ['Asia/Magadan','Магадан, Сахалин (МСК+8)'],
+    ['Asia/Kamchatka','Петропавловск-Камчатский (МСК+9)'],
+    ['Europe/Kyiv','Киев (Украина)'],
+    ['Europe/Minsk','Минск (Беларусь)'],
+    ['Europe/Chisinau','Кишинёв (Молдова)'],
+    ['Asia/Almaty','Алматы, Астана (Казахстан)'],
+    ['Asia/Tashkent','Ташкент (Узбекистан)'],
+    ['Asia/Bishkek','Бишкек (Киргизия)'],
+    ['Asia/Dushanbe','Душанбе (Таджикистан)'],
+    ['Asia/Ashgabat','Ашхабад (Туркмения)'],
+    ['Asia/Tbilisi','Тбилиси (Грузия)'],
+    ['Asia/Yerevan','Ереван (Армения)'],
+    ['Asia/Baku','Баку (Азербайджан)'],
+    ['Europe/Riga','Рига (Латвия)'],
+    ['Europe/Vilnius','Вильнюс (Литва)'],
+    ['Europe/Tallinn','Таллин (Эстония)']
+  ]],
+  ['Мир',[
+    ['Europe/London','Лондон'],['Europe/Berlin','Берлин, Рим, Париж'],
+    ['Europe/Athens','Афины, Хельсинки'],['Asia/Jerusalem','Иерусалим'],
+    ['Asia/Dubai','Дубай'],['Asia/Kolkata','Индия (Дели, Мумбаи)'],
+    ['Asia/Shanghai','Пекин, Шанхай'],['Asia/Tokyo','Токио'],
+    ['Australia/Sydney','Сидней'],['America/New_York','Нью-Йорк'],
+    ['America/Chicago','Чикаго'],['America/Los_Angeles','Лос-Анджелес']
+  ]]
+];
+function buildManualZones(){
+  const sel=document.getElementById('tzManual');
+  sel.innerHTML='';
+  for(const [grp,zs] of MANUAL_ZONES){
+    const og=document.createElement('optgroup'); og.label=grp;
+    for(const [z,lbl] of zs){
+      const o=document.createElement('option'); o.value=z; o.textContent=lbl;
+      if(z==='Europe/Moscow') o.selected=true;
+      og.appendChild(o);
+    }
+    sel.appendChild(og);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   РАСЧЁТ
+   ════════════════════════════════════════════════════════════════════ */
+const MONTHS=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+async function computeNakshatra(){
+  const res=document.getElementById('result');
+  const dv=document.getElementById('bdate').value;
+  const tv=document.getElementById('btime').value;
+  if(!dv){ res.innerHTML='<p class="err">Укажите дату рождения.</p>'; return; }
+  if(!tv){ res.innerHTML='<p class="err">Укажите время рождения — Луна меняет накшатру примерно раз в сутки, поэтому точное время важно.</p>'; return; }
+
+  // часовой пояс: из выбранного города либо из ручного выбора
+  const manualOpen=document.querySelector('details.manual').open;
+  const cityText=cityInput.value.trim();
+  let zone, placeLabel;
+  if(selected){
+    zone=selected.zone; placeLabel=selected.name+', '+selected.admin;
+  }else if(manualOpen || !cityText){
+    const sel=document.getElementById('tzManual');
+    zone=sel.value; placeLabel='пояс вручную: '+sel.options[sel.selectedIndex].textContent;
+  }else{
+    res.innerHTML='<p class="err">Выберите место из выпадающего списка (или откройте «Указать часовой пояс вручную»).</p>'; return;
+  }
+  if(!zone){ res.innerHTML='<p class="err">Выберите место из списка или укажите часовой пояс вручную.</p>'; return; }
+
+  const [y,mo,d]=dv.split('-').map(Number);
+  const [h,mi]=tv.split(':').map(Number);
+
+  // историческое смещение пояса на момент рождения
+  const m=moment.tz([y,mo-1,d,h,mi],zone);
+  if(!m.isValid()){ res.innerHTML='<p class="err">Не удалось определить часовой пояс. Попробуйте ручной выбор.</p>'; return; }
+  const offsetHours=m.utcOffset()/60;
+  const offStr=m.format('Z');                 // напр. +03:00
+  const utStr=m.clone().utc().format('DD.MM.YYYY HH:mm');
+
+  await ensureEngine();
+
+  // UT → Юлианский день → долгота Луны
+  const utHour=h+mi/60-offsetHours;
+  let jd, moonTrop;
+  if(SWE_READY){
+    jd=SWE.julday(y,mo,d,utHour);
+    moonTrop=nd(SWE.calc(jd,1,4|256));
+  }else{
+    jd=jdLocal(y,mo,d,h,mi,offsetHours);
+    moonTrop=moonLonMeeus(jd);
+  }
+  const ay=lahiriAyanamsa(jd);
+  const sid=nd(moonTrop-ay);
+  const idx=Math.floor(sid/(360/27));
+  const [nameRu,nameSan]=NAKSHATRAS[idx];
+
+  const degInSign=sid%30, sgn=Math.floor(sid/30);
+  const SIGN=['Овна','Тельца','Близнецов','Рака','Льва','Девы','Весов','Скорпиона','Стрельца','Козерога','Водолея','Рыб'];
+  const dd=Math.floor(degInSign), mm=Math.floor((degInSign-dd)*60);
+
+  res.innerHTML=
+    '<div class="result-naksh">'+
+      '<div class="rn-label">Накшатра Луны</div>'+
+      '<div class="rn-name">'+esc(nameRu)+'</div>'+
+      '<div class="rn-sub">№'+(idx+1)+' из 27 · '+esc(nameSan)+'</div>'+
+    '</div>'+
+    '<p class="calc-details">'+
+      '<b>'+esc(placeLabel)+'</b><br>'+
+      'Часовой пояс: '+esc(zone)+', смещение <b>UTC'+offStr+'</b> на '+d+'&nbsp;'+MONTHS[mo-1]+'&nbsp;'+y+' (исторически точное)<br>'+
+      'Всемирное время (UT): '+utStr+' · аянамша Лахири '+ay.toFixed(3)+'°<br>'+
+      'Сидерическая долгота Луны: '+sid.toFixed(2)+'° ('+dd+'°'+String(mm).padStart(2,'0')+"' "+SIGN[sgn]+')'+
+    '</p>';
+}
+
+/* ── старт ── */
+document.getElementById('year').textContent=new Date().getFullYear();
+ensureEngine();      // прогреваем эфемериды заранее
+loadCities();        // грузим базу мест
+</script>
+</body>
+</html>
